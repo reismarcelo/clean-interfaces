@@ -1,0 +1,13 @@
+<ncs-package xmlns="http://tail-f.com/ns/ncs-packages">
+  <name>clean-interfaces</name>
+  <package-version>1.0</package-version>
+  <description>Generated Python package</description>
+  <ncs-min-version>4.5</ncs-min-version>
+
+  <component>
+    <name>main</name>
+    <application>
+      <python-class-name>clean_interfaces.main.Main</python-class-name>
+    </application>
+  </component>
+</ncs-package>

@@ -1,0 +1,177 @@
+// =========================================================================
+//  CLEAN-INTERFACES PACKAGE MODEL
+// =========================================================================
+module clean-interfaces {
+
+  namespace "http://com/ciscoas/services/clean-interfaces";
+  prefix clints;
+
+  import ietf-inet-types { prefix inet; }
+  import tailf-common { prefix tailf; }
+  import tailf-ncs { prefix ncs; }
+
+  organization "Cisco Systems, Inc.";
+
+  contact
+    " Marcelo Reis
+      mareis@cisco.com
+    ";
+
+  description
+    " Shutdown interfaces from a device that are un-utilized.
+    ";
+
+
+  // =========================================================================
+  //  REVISION
+  // =========================================================================
+
+  revision 2017-10-20 {
+    description
+      "Initial revision.";
+  }
+
+
+  // =========================================================================
+  //  IDENTITIES
+  // =========================================================================
+
+  identity first-sample-collected {
+    base ncs:plan-state;
+  }
+
+  identity second-sample-collected {
+    base ncs:plan-state;
+  }
+
+
+  // =========================================================================
+  //  SERVICES
+  // =========================================================================
+
+  augment /ncs:services {
+    container clean-interfaces {
+      tailf:info "Shutdown unused router interfaces";
+      tailf:cli-add-mode;
+
+      list device {
+        when "../setup" {
+          tailf:dependency "../setup";
+        }
+
+        tailf:info "Specify device";
+        uses ncs:service-data;
+        uses ncs:plan-data;
+        ncs:servicepoint clean-interfaces-servicepoint;
+
+        key name;
+
+        leaf name {
+          tailf:info "Device name";
+          type leafref {
+            path "/ncs:devices/ncs:device/ncs:name";
+          }
+        }
+
+        container interface-counters {
+          config false;
+          tailf:cdb-oper {
+            tailf:persistent true;
+          }
+
+          list sample {
+            key timestamp;
+
+            leaf timestamp {
+              type int64;
+            }
+
+            list interface {
+              key id;
+              leaf id {
+                type string;
+              }
+              leaf in-pkts {
+                type uint64;
+              }
+              leaf out-pkts {
+                type uint64;
+              }
+            }
+          }
+        }
+
+        tailf:action collect-stats {
+          tailf:info "Collect interface statistics for this device";
+          tailf:actionpoint collect-stats-action;
+          input {
+          }
+          output {
+            leaf success {
+              type string;
+            }
+            leaf failure {
+              type string;
+            }
+          }
+        }
+
+        tailf:action reset-stats {
+          tailf:info "Remove all interface statistics samples for this device";
+          tailf:actionpoint reset-stats-action;
+          input {
+          }
+          output {
+            leaf result {
+              type string;
+            }
+          }
+        }
+
+      }  // list device
+
+      list stats-requests {
+        config false;
+        tailf:cdb-oper {
+          tailf:persistent true;
+        }
+        key id;
+        leaf id {
+          type string;
+        }
+        leaf target-instance {
+          type string;
+        }
+      }
+
+      container setup {
+        tailf:info "One-time setup of global kickers";
+        tailf:cli-add-mode;
+
+        presence yes;
+        uses ncs:service-data;
+        ncs:servicepoint setup-kickers-servicepoint;
+
+        leaf threshold {
+          tailf:info "Threshold in in/out packets under which interfaces are considered for shutdown";
+          type uint64;
+          default 10;
+        }
+        leaf max-samples {
+          tailf:info "Maximum number of interface stats samples to keep";
+          type uint16;
+          default 2;
+        }
+        leaf min-interval {
+          tailf:info "Minimum interval between samples in seconds";
+          type uint16 {
+            range "1..200";
+          }
+          default 20;
+        }
+      }
+
+    }  // container clean-interfaces
+
+  }  // augment services
+}

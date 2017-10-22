@@ -1,0 +1,18 @@
+<config-template xmlns="http://tail-f.com/ns/config/1.0">
+    <kickers xmlns="http://tail-f.com/ns/kicker">
+        <data-kicker>
+            <id>clean-interfaces-redeploy-{/name}</id>
+            <monitor>/ncs:services/clints:clean-interfaces/clints:device[clints:name='{/name}']/clints:interface-counters/clints:sample</monitor>
+            <kick-node xmlns:clints="http://com/ciscoas/services/clean-interfaces">/ncs:services/clints:clean-interfaces/clints:device[clints:name='{/name}']</kick-node>
+            <action-name>reactive-re-deploy</action-name>
+        </data-kicker>
+    </kickers>
+    <services xmlns="http://tail-f.com/ns/ncs">
+        <clean-interfaces xmlns="http://com/ciscoas/services/clean-interfaces">
+            <stats-requests>
+                <id>{/name}-{$ID}</id>
+                <target-instance>{/name}</target-instance>
+            </stats-requests>
+        </clean-interfaces>
+    </services>
+</config-template>
