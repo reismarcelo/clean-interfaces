@@ -17,6 +17,7 @@ def live_status_any(device):
     stats_exec = {
         'cisco-ios': 'ios_stats__exec',
         'cisco-nx': 'nx_stats__exec',
+        'cisco-ios-xr-id:cisco-ios-xr': 'cisco_ios_xr_stats__exec',
         'cisco-ios-xr': 'cisco_ios_xr_stats__exec',
     }
     return getattr(device.live_status, stats_exec[device.device_type.cli.ned_id]).any
@@ -136,6 +137,8 @@ class CleanInterfacesService(Service):
             return
 
         self.log.info('Enough samples, figuring something out')
+
+        # sample_dict is {<intf>: [(<in_pkts1>, <out_pkts1>), (<in_pkts2>, <out_pkts2>), ...], ...}
         sample_dict = {}
         for timestamp in sorted(key_list):
             sample = service.interface_counters.sample[timestamp]
@@ -159,6 +162,7 @@ class CleanInterfacesService(Service):
                     'INTERFACE_ID': intf_id
                 }
                 if intf_type in template_mapping:
+                    self.log.info('Identified unused interface: {}{}'.format(intf_type, intf_id))
                     apply_template(template_mapping[intf_type], service, t_vars)
 
         return proplist
