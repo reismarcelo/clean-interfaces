@@ -23,9 +23,9 @@ def plan_data_service(*custom_states):
                 proplist = cb_create_method(self, tctx, root, service, proplist, self_plan)
                 if proplist is None:
                     return
-            except NcsServiceError as e:
-                self.log.error(e)
+            except NsoServiceError as e:
                 self_plan.set_failed('ncs:ready')
+                raise
             else:
                 self_plan.set_reached('ncs:ready')
 
@@ -95,6 +95,6 @@ def is_intf_sub(intf_name):
 # ---------------------------------------------
 # Exceptions
 # ---------------------------------------------
-class NcsServiceError(Exception):
+class NsoServiceError(Exception):
     """ Exception indicating error during service create """
     pass
