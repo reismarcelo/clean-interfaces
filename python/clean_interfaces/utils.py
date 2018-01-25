@@ -24,6 +24,7 @@ def plan_data_service(*custom_states):
                 if proplist is None:
                     return
             except NsoServiceError as e:
+                self.log.error(e)
                 self_plan.set_failed('ncs:ready')
                 raise
             else:
