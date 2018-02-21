@@ -17,10 +17,10 @@ def live_status_any(device):
     stats_exec = {
         'cisco-ios': 'ios_stats__exec',
         'cisco-nx': 'nx_stats__exec',
-        'cisco-ios-xr-id:cisco-ios-xr': 'cisco_ios_xr_stats__exec',
         'cisco-ios-xr': 'cisco_ios_xr_stats__exec',
     }
-    return getattr(device.live_status, stats_exec[device.device_type.cli.ned_id]).any
+    ned = device.device_type.cli.ned_id.split(':')[-1]
+    return getattr(device.live_status, stats_exec[ned]).any
 
 
 class CollectStatsAction(Action):
@@ -38,7 +38,7 @@ class CollectStatsAction(Action):
         action_set_timeout(uinfo, 240)
 
         parsed_intfs = []
-        with ncs.maapi.single_read_trans(uinfo.username, uinfo.context) as read_t:
+        with ncs.maapi.single_read_trans(uinfo.username, "system") as read_t:
             root = ncs.maagic.get_root(read_t)
             service = ncs.maagic.cd(root, kp)
             device = root.devices.device[service.name]
@@ -49,7 +49,7 @@ class CollectStatsAction(Action):
                 wait_time = root.ncs__services.clints__clean_interfaces.clints__setup.clints__min_interval - \
                             (int(time()) - sorted(key_list)[-1])
                 if wait_time > 0:
-                    self.log.info('Will wait {}s according to configured min-interval'.format(wait_time))
+                    self.log.info('Waiting {}s, based on min-interval'.format(wait_time))
                     sleep(wait_time)
                     self.log.info('Done waiting, lets proceed'.format(wait_time))
 
@@ -67,7 +67,7 @@ class CollectStatsAction(Action):
             self.log.info('Collected interface stats from device: ', device.name)
 
         if len(parsed_intfs) > 0:
-            with ncs.maapi.single_write_trans(uinfo.username, uinfo.context) as write_t:
+            with ncs.maapi.single_write_trans(uinfo.username, "system", db=ncs.OPERATIONAL) as write_t:
                 root = ncs.maagic.get_root(write_t)
                 service = ncs.maagic.cd(root, kp)
 
@@ -102,7 +102,7 @@ class ResetStatsAction(Action):
     @Action.action
     def cb_action(self, uinfo, name, kp, input, output):
         self.log.info('Executing action: ', name)
-        with ncs.maapi.single_write_trans(uinfo.username, uinfo.context) as write_t:
+        with ncs.maapi.single_write_trans(uinfo.username, "system", db=ncs.OPERATIONAL) as write_t:
             root = ncs.maagic.get_root(write_t)
             service = ncs.maagic.cd(root, kp)
 
@@ -149,21 +149,21 @@ class CleanInterfacesService(Service):
                       for intf, samples in sample_dict.items() if len(samples) > 1}
 
         configured_threshold = root.ncs__services.clints__clean_interfaces.clints__setup.clints__threshold
-        template_mapping = {
-            'GigabitEthernet': 'shutdown-gigabitethernet',
-            'TenGigE': 'shutdown-tengige',
-        }
 
+        supported_interfaces = {
+            'GigabitEthernet',
+            'TenGigE',
+        }
         for intf, delta_pkts in delta_dict.items():
             if not is_intf_sub(intf) and (delta_pkts < configured_threshold):
                 intf_type, intf_id = split_intf_name(intf)
-                t_vars = {
-                    'INTERFACE_TYPE': intf_type,
-                    'INTERFACE_ID': intf_id
-                }
-                if intf_type in template_mapping:
+                if intf_type in supported_interfaces:
+                    t_vars = {
+                        'INTERFACE_TYPE': intf_type,
+                        'INTERFACE_ID': intf_id
+                    }
                     self.log.info('Identified unused interface: {}{}'.format(intf_type, intf_id))
-                    apply_template(template_mapping[intf_type], service, t_vars)
+                    apply_template('shutdown-interface', service, t_vars)
 
         return proplist
 

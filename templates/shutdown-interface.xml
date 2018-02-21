@@ -4,10 +4,14 @@
             <name>{/name}</name>
             <config>
                 <interface xmlns="http://tail-f.com/ned/cisco-ios-xr">
-                    <GigabitEthernet>
+                    <GigabitEthernet when="{$INTERFACE_TYPE='GigabitEthernet'}">
                         <id>{$INTERFACE_ID}</id>
-                        <description>### Unused ###</description>
+                        <shutdown/>
                     </GigabitEthernet>
+                    <TenGigE when="{$INTERFACE_TYPE='TenGigE'}">
+                        <id>{$INTERFACE_ID}</id>
+                        <shutdown/>
+                    </TenGigE>
                 </interface>
             </config>
         </device>
