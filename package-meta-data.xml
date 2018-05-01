@@ -1,7 +1,7 @@
 <ncs-package xmlns="http://tail-f.com/ns/ncs-packages">
   <name>clean-interfaces</name>
   <package-version>1.2</package-version>
-  <description>Generated Python package</description>
+  <description>Shutdown unused interfaces based on interface counters</description>
   <ncs-min-version>4.5</ncs-min-version>
 
   <component>
