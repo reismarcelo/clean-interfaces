@@ -12,6 +12,10 @@
                         <id>{$INTERFACE_ID}</id>
                         <shutdown/>
                     </TenGigE>
+                    <Bundle-Ether when="{$INTERFACE_TYPE='Bundle-Ether'}">
+                        <id>{$INTERFACE_ID}</id>
+                        <shutdown/>
+                    </Bundle-Ether>
                 </interface>
             </config>
         </device>

@@ -1,4 +1,4 @@
-<config-template xmlns="http://tail-f.com/ns/config/1.0">
+<config-template xmlns="http://tail-f.com/ns/config/1.0" servicepoint="setup-kickers-servicepoint">
     <kickers xmlns="http://tail-f.com/ns/kicker">
         <data-kicker>
             <id>clean-interfaces-collect-stats</id>

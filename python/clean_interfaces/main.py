@@ -30,9 +30,7 @@ class CollectStatsAction(Action):
         def parse_intf_block(intf_block, intf_name):
             parsed = re.search(r'\s+(?P<in_pkts>\d+)\s+packets input[^$]+\s+(?P<out_pkts>\d+)\s+packets output',
                                intf_block)
-            if parsed is not None:
-                return intf_name, parsed.group('in_pkts'), parsed.group('out_pkts')
-            return None
+            return (intf_name, parsed.group('in_pkts'), parsed.group('out_pkts')) if parsed is not None else None
 
         self.log.info('Executing action: ', name)
         action_set_timeout(uinfo, 240)
@@ -49,7 +47,7 @@ class CollectStatsAction(Action):
                 wait_time = root.ncs__services.clints__clean_interfaces.clints__setup.clints__min_interval - \
                             (int(time()) - sorted(key_list)[-1])
                 if wait_time > 0:
-                    self.log.info('Waiting {}s, based on min-interval'.format(wait_time))
+                    self.log.info('Waiting {}s, based on min-interval between samples'.format(wait_time))
                     sleep(wait_time)
                     self.log.info('Done waiting, lets proceed'.format(wait_time))
 
@@ -136,25 +134,26 @@ class CleanInterfacesService(Service):
             apply_template('instance-request-stats-kicker', service, {'ID': len(key_list)})
             return
 
-        self.log.info('Enough samples, figuring something out')
+        self.log.info('Enough samples, looking for unused interfaces')
 
-        # sample_dict is {<intf>: [(<in_pkts1>, <out_pkts1>), (<in_pkts2>, <out_pkts2>), ...], ...}
-        sample_dict = {}
+        # samples_dict is {<intf>: [(<in_pkts1>, <out_pkts1>), (<in_pkts2>, <out_pkts2>), ...], ...}
+        samples_dict = {}
         for timestamp in sorted(key_list):
             sample = service.interface_counters.sample[timestamp]
             for intf in sample.interface:
-                sample_dict.setdefault(intf.id, []).append((intf.in_pkts, intf.out_pkts))
+                samples_dict.setdefault(intf.id, []).append((intf.in_pkts, intf.out_pkts))
 
-        delta_dict = {intf: (samples[-1][0] - samples[-2][0]) + (samples[-1][1] - samples[-2][1])
-                      for intf, samples in sample_dict.items() if len(samples) > 1}
+        delta_pkts_dict = {intf: (samples[-1][0] - samples[-2][0]) + (samples[-1][1] - samples[-2][1])
+                           for intf, samples in samples_dict.items() if len(samples) > 1}
 
         configured_threshold = root.ncs__services.clints__clean_interfaces.clints__setup.clints__threshold
 
         supported_interfaces = {
             'GigabitEthernet',
             'TenGigE',
+            'Bundle-Ether',
         }
-        for intf, delta_pkts in delta_dict.items():
+        for intf, delta_pkts in delta_pkts_dict.items():
             if not is_intf_sub(intf) and (delta_pkts < configured_threshold):
                 intf_type, intf_id = split_intf_name(intf)
                 if intf_type in supported_interfaces:
@@ -168,13 +167,6 @@ class CleanInterfacesService(Service):
         return proplist
 
 
-class SetupKickersService(Service):
-    @Service.create
-    def cb_create(self, tctx, root, service, proplist):
-        self.log.info('Service create ({})'.format(service._path))
-        apply_template('global-collect-stats-kicker', service)
-
-
 # ---------------------------------------------
 # COMPONENT THREAD THAT WILL BE STARTED BY NCS.
 # ---------------------------------------------
@@ -186,7 +178,6 @@ class Main(ncs.application.Application):
 
         # Registration of service callbacks
         self.register_service('clean-interfaces-servicepoint', CleanInterfacesService)
-        self.register_service('setup-kickers-servicepoint', SetupKickersService)
 
         # Registration of action callbacks
         self.register_action('collect-stats-action', CollectStatsAction)

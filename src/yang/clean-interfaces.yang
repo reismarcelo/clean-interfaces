@@ -3,7 +3,7 @@
 // =========================================================================
 module clean-interfaces {
 
-  namespace "http://com/ciscoas/services/clean-interfaces";
+  namespace "http://cisco.com/cx/clean-interfaces";
   prefix clints;
 
   import ietf-inet-types { prefix inet; }
@@ -18,13 +18,18 @@ module clean-interfaces {
     ";
 
   description
-    " Shutdown interfaces from a device that are un-utilized.
+    " Shutdown unused interfaces from a device.
     ";
 
 
   // =========================================================================
   //  REVISION
   // =========================================================================
+
+  revision 2019-01-21 {
+    description
+      "Added Bundle-Ether support and minor optimizations.";
+  }
 
   revision 2017-10-20 {
     description
@@ -102,7 +107,7 @@ module clean-interfaces {
         }
 
         tailf:action collect-stats {
-          tailf:info "Collect interface statistics for this device";
+          tailf:info "Collect interface stats from this device";
           tailf:actionpoint collect-stats-action;
           input {
           }
@@ -117,7 +122,7 @@ module clean-interfaces {
         }
 
         tailf:action reset-stats {
-          tailf:info "Remove all interface statistics samples for this device";
+          tailf:info "Remove all interface samples from this device";
           tailf:actionpoint reset-stats-action;
           input {
           }
@@ -145,7 +150,7 @@ module clean-interfaces {
       }
 
       container setup {
-        tailf:info "One-time setup of global kickers";
+        tailf:info "One-time service setup";
         tailf:cli-add-mode;
 
         presence yes;
@@ -153,17 +158,17 @@ module clean-interfaces {
         ncs:servicepoint setup-kickers-servicepoint;
 
         leaf threshold {
-          tailf:info "Threshold in in/out packets under which interfaces are considered for shutdown";
+          tailf:info "Threshold of delta in + out packets under which interfaces are considered for shutdown";
           type uint64;
           default 10;
         }
         leaf max-samples {
-          tailf:info "Maximum number of interface stats samples to keep";
+          tailf:info "Maximum number of samples to keep, older samples are trimmed";
           type uint16;
           default 2;
         }
         leaf min-interval {
-          tailf:info "Minimum interval between samples in seconds";
+          tailf:info "Minimum interval between samples, in seconds";
           type uint16 {
             range "1..200";
           }
