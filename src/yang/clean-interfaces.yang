@@ -60,10 +60,6 @@ module clean-interfaces {
       tailf:cli-add-mode;
 
       list device {
-        when "../setup" {
-          tailf:dependency "../setup";
-        }
-
         tailf:info "Specify device";
         uses ncs:service-data;
         uses ncs:plan-data;
@@ -152,10 +148,6 @@ module clean-interfaces {
       container setup {
         tailf:info "One-time service setup";
         tailf:cli-add-mode;
-
-        presence yes;
-        uses ncs:service-data;
-        ncs:servicepoint setup-kickers-servicepoint;
 
         leaf threshold {
           tailf:info "Threshold of delta in + out packets under which interfaces are considered for shutdown";

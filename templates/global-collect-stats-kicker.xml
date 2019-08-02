@@ -1,7 +1,7 @@
-<config-template xmlns="http://tail-f.com/ns/config/1.0" servicepoint="setup-kickers-servicepoint">
+<config-template xmlns="http://tail-f.com/ns/config/1.0">
     <kickers xmlns="http://tail-f.com/ns/kicker">
         <data-kicker>
-            <id>clean-interfaces-collect-stats</id>
+            <id>{$NAME}</id>
             <monitor>/ncs:services/clints:clean-interfaces/clints:stats-requests/clints:target-instance</monitor>
             <kick-node>/ncs:services/clints:clean-interfaces/clints:device[clints:name=current()]</kick-node>
             <action-name>collect-stats</action-name>

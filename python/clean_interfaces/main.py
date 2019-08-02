@@ -167,14 +167,35 @@ class CleanInterfacesService(Service):
         return proplist
 
 
+def kicker_setup(delete=False):
+    """
+    Configure or remove global kicker. That is, a kicker which is required before the first service instance.
+    :param delete: Optional, True indicates kicker is to be removed.
+    """
+    kicker_name = 'clean-interfaces-collect-stats'
+    with ncs.maapi.single_write_trans("system", "system") as write_t:
+        root = ncs.maagic.get_root(write_t)
+
+        if delete:
+            # Delete needs to be done via maagic because the template may not be available (e.g. package is removed)
+            del root.kickers.data_kicker[kicker_name]
+        else:
+            # Templates require context to be different than root
+            context = ncs.maagic.cd(root, '/ncs:services')
+            apply_template('global-collect-stats-kicker', context, {'NAME': kicker_name})
+
+        write_t.apply()
+
+
 # ---------------------------------------------
 # COMPONENT THREAD THAT WILL BE STARTED BY NCS.
 # ---------------------------------------------
 class Main(ncs.application.Application):
     def setup(self):
-        # The application class sets up logging for us. It is accessible
-        # through 'self.log' and is a ncs.log.Log instance.
         self.log.info('Main RUNNING')
+
+        # Configure kicker
+        kicker_setup()
 
         # Registration of service callbacks
         self.register_service('clean-interfaces-servicepoint', CleanInterfacesService)
@@ -184,4 +205,7 @@ class Main(ncs.application.Application):
         self.register_action('reset-stats-action', ResetStatsAction)
 
     def teardown(self):
+        # Remove kicker
+        kicker_setup(delete=True)
+
         self.log.info('Main FINISHED')
